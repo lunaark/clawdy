@@ -1,10 +1,112 @@
 # Clawdy 🦀
 
+[English](#english) | [中文](#中文)
+
+---
+
+## English
+
+A pixel-art desktop pet crab for macOS — your coding companion while waiting for Claude.
+
+Clawdy is based on Claude's official mascot Clawd. While Claude is working, watch your little crab buddy do its thing — it makes the wait actually fun.
+
+### Quick Start
+
+```bash
+python3 ~/animation/clawd_pet.py
+```
+
+Supports auto-launch on boot via LaunchAgent.
+
+### Controls
+
+| Action | How |
+|--------|-----|
+| Drag | Left-click and hold |
+| Menu | Right-click / Control+click |
+| Play music | Menu → 🎵 Play Music |
+| Next track | Menu → ⏭ Next |
+| Fireworks | Menu → 🎆 Fireworks |
+| Quit | Menu → Quit |
+
+### Animation States
+
+#### Idle States (random auto-switch)
+
+| State | Description |
+|-------|-------------|
+| idle | Breathing quietly + occasional blink |
+| walk_left / walk_right | Walking sideways, window actually moves |
+| dance | Swaying + raising claws + blush + foot particles |
+| sleep | Curled up + floating Zzz |
+| wave | Waving + heart particles |
+| jump | Crouch → jump → bounce + particles |
+| working | Coding at a tiny screen + sweating |
+| happy | Bouncing + raising claws + floating hearts |
+| eating | Find cookie → bite → crumbs → satisfied |
+| excited | Fast bouncing + sparkle particles |
+| firework | Light fuse → launch → Claude logo burst → afterglow |
+
+#### Claude Code Integration
+
+When you're using Claude Code, Clawdy reflects the work status in real time:
+
+| State | Trigger |
+|-------|---------|
+| thinking | When you send a prompt — thought bubble |
+| cc_working | When tools are called — coding at screen |
+| error | When a tool fails — shaking + smoke |
+| celebrate | When task completes — blush + particles |
+
+#### Companion Awareness
+
+| Behavior | Trigger |
+|----------|---------|
+| Tilts head at you | Mouse idle for 2 minutes |
+| "Drink water" sign | After 45 minutes of continuous work |
+
+### Eye Tracking
+
+Clawdy's eyes follow your mouse cursor, with a 40px dead zone to prevent jitter.
+
+### Music
+
+Comes with 3 built-in lo-fi tracks. You can add more audio files to the `music/` folder:
+- Formats: mp3, m4a, wav, aac, flac
+- Auto-shuffle, auto-play next
+- Uses macOS built-in `afplay` — zero dependencies
+
+### Tech Stack
+
+- **Language**: Python 3 + tkinter
+- **Pixel rendering**: Canvas rectangles, SCALE=6 (each logical pixel = 6×6 screen pixels)
+- **Transparent window**: macOS `systemTransparent` + `overrideredirect`
+- **Particle system**: Physics simulation (gravity, velocity, life, decay)
+- **Easing**: ease_out, ease_in_out, lerp
+- **State machine**: Random transitions, 3-8 seconds per state
+- **Claude Code integration**: HTTP server (port 18900) + Claude Code hooks
+- **Music**: subprocess calling afplay
+- **Auto-launch**: ~/Library/LaunchAgents/com.clawd.pet.plist
+
+### Auto-Launch Management
+
+```bash
+# Disable auto-launch
+launchctl unload ~/Library/LaunchAgents/com.clawd.pet.plist
+
+# Enable auto-launch
+launchctl load ~/Library/LaunchAgents/com.clawd.pet.plist
+```
+
+---
+
+## 中文
+
 macOS 像素风桌面宠物螃蟹，在你等待 Claude 的时候陪你编程。
 
 Clawdy 是基于 Claude 官方吉祥物 Clawd 的桌面小伙伴，等 Claude 干活的时候，看它在旁边忙忙碌碌，让等待变得有趣。
 
-## 快速启动
+### 快速启动
 
 ```bash
 python3 ~/animation/clawd_pet.py
@@ -12,7 +114,7 @@ python3 ~/animation/clawd_pet.py
 
 已配置开机自启动（LaunchAgent），重启电脑会自动出现。
 
-## 操作方式
+### 操作方式
 
 | 操作 | 方法 |
 |------|------|
@@ -23,9 +125,9 @@ python3 ~/animation/clawd_pet.py
 | 放烟花 | 菜单 → 🎆 放烟花 |
 | 退出 | 菜单 → 退出 |
 
-## 动画状态
+### 动画状态
 
-### 日常状态（随机自动切换）
+#### 日常状态（随机自动切换）
 
 | 状态 | 描述 |
 |------|------|
@@ -41,7 +143,7 @@ python3 ~/animation/clawd_pet.py
 | excited | 快速蹦跳 + 闪光粒子 |
 | firework | 点燃→上升→Claude logo 米字形绽放→余韵→欢呼 |
 
-### Claude Code 联动状态
+#### Claude Code 联动状态
 
 当你使用 Claude Code 时，小螃蟹会实时反映工作状态：
 
@@ -52,25 +154,25 @@ python3 ~/animation/clawd_pet.py
 | error | 工具报错时，身体颤抖 + 冒烟 |
 | celebrate | 任务完成时，腮红 + 粒子庆祝 |
 
-### 小伙伴关心
+#### 小伙伴关心
 
 | 行为 | 触发条件 |
 |------|----------|
 | 歪头看你 | 鼠标 2 分钟没动，它会抬头看你 |
 | 喝水提醒 | 连续工作 45 分钟，头顶举起"喝水"小牌子 |
 
-## 眼睛跟随
+### 眼睛跟随
 
 小螃蟹的眼睛会跟随鼠标方向看，有 40px 死区阈值避免抖动。
 
-## 音乐播放
+### 音乐播放
 
 内置 3 首轻音乐，开箱可用。也可以把更多音频文件放到 `music/` 文件夹：
 - 支持格式：mp3、m4a、wav、aac、flac
 - 自动随机播放，播完自动下一首
 - 使用 macOS 自带 afplay，零依赖
 
-## 技术架构
+### 技术架构
 
 - **语言**：Python 3 + tkinter
 - **像素绘制**：Canvas rectangles，SCALE=6（每个逻辑像素 6×6 屏幕像素）
@@ -82,19 +184,7 @@ python3 ~/animation/clawd_pet.py
 - **音乐**：subprocess 调用 afplay
 - **开机自启**：~/Library/LaunchAgents/com.clawd.pet.plist
 
-## 文件结构
-
-```
-~/animation/
-├── clawd_pet.py          # 桌面宠物主程序
-├── music/                # 音乐文件夹（内置 3 首）
-│   └── *.mp3
-├── dancing-clawd.html    # Clawd 跳舞动画
-├── sunset-beach.html     # 海边看日落动画
-└── README.md
-```
-
-## 开机自启动管理
+### 开机自启动管理
 
 ```bash
 # 取消开机自启
@@ -102,4 +192,18 @@ launchctl unload ~/Library/LaunchAgents/com.clawd.pet.plist
 
 # 恢复开机自启
 launchctl load ~/Library/LaunchAgents/com.clawd.pet.plist
+```
+
+---
+
+## File Structure
+
+```
+~/animation/
+├── clawd_pet.py          # Main program
+├── music/                # Music folder (3 built-in tracks)
+│   └── *.mp3
+├── dancing-clawd.html    # Clawd dancing animation
+├── sunset-beach.html     # Sunset beach animation
+└── README.md
 ```

@@ -9,7 +9,24 @@ import os
 import glob
 import threading
 import json
+import locale
 from http.server import HTTPServer, BaseHTTPRequestHandler
+
+# ─── 国际化 ───────────────────────────────────────────────────
+def _is_chinese():
+    lang = locale.getdefaultlocale()[0] or ''
+    return lang.startswith('zh')
+
+_ZH = _is_chinese()
+
+I18N = {
+    'play_music':  '🎵 播放音乐' if _ZH else '🎵 Play Music',
+    'stop_music':  '⏹ 停止音乐' if _ZH else '⏹ Stop Music',
+    'next_track':  '⏭ 下一首'   if _ZH else '⏭ Next Track',
+    'firework':    '🎆 放烟花'   if _ZH else '🎆 Fireworks',
+    'quit':        '退出'        if _ZH else 'Quit',
+    'drink_water': '喝水'        if _ZH else 'Water!',
+}
 
 # ─── 常量 ─────────────────────────────────────────────────────
 SCALE = 6          # 每个逻辑像素 = 6×6 屏幕像素
@@ -530,12 +547,12 @@ class ClawdPet:
 
         # 右键菜单
         self.menu = tk.Menu(self.root, tearoff=0)
-        self.menu.add_command(label='🎵 播放音乐', command=self._toggle_music)
-        self.menu.add_command(label='⏭ 下一首', command=self._next_music)
+        self.menu.add_command(label=I18N['play_music'], command=self._toggle_music)
+        self.menu.add_command(label=I18N['next_track'], command=self._next_music)
         self.menu.add_separator()
-        self.menu.add_command(label='🎆 放烟花', command=self._trigger_firework)
+        self.menu.add_command(label=I18N['firework'], command=self._trigger_firework)
         self.menu.add_separator()
-        self.menu.add_command(label='退出', command=self._quit)
+        self.menu.add_command(label=I18N['quit'], command=self._quit)
         self.canvas.bind('<ButtonPress-2>', self._show_menu)
         self.canvas.bind('<Control-ButtonPress-1>', self._show_menu)
 
@@ -650,7 +667,7 @@ class ClawdPet:
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
         )
         self._music_playing = True
-        self.menu.entryconfigure(0, label='⏹ 停止音乐')
+        self.menu.entryconfigure(0, label=I18N['stop_music'])
         self._check_music_end()
 
     def _stop_music(self):
@@ -658,7 +675,7 @@ class ClawdPet:
             self._music_proc.terminate()
             self._music_proc = None
         self._music_playing = False
-        self.menu.entryconfigure(0, label='🎵 播放音乐')
+        self.menu.entryconfigure(0, label=I18N['play_music'])
 
     def _next_music(self):
         if not self._music_files:
@@ -1185,7 +1202,7 @@ class ClawdPet:
         if self._showing_drink_sign:
             ox, oy = self.cx, self.cy
             # 牌子在小螃蟹头顶
-            self.renderer.draw_sign(ox + 1, oy - 6, '喝水')
+            self.renderer.draw_sign(ox + 1, oy - 6, I18N['drink_water'])
 
         # 更新和绘制粒子
         self.particles.update()
