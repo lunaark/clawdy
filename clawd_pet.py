@@ -2,7 +2,6 @@
 """Clawd Desktop Pet — macOS 桌面像素风小螃蟹"""
 
 import tkinter as tk
-from tkinter import font as tkfont
 import random
 import math
 import subprocess
@@ -10,7 +9,6 @@ import os
 import glob
 import threading
 import json
-import time
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 # ─── 常量 ─────────────────────────────────────────────────────
@@ -519,8 +517,6 @@ class ClawdPet:
 
         # Claude Code 联动: 启动 HTTP server
         self._claude_linked = False
-        self._permission_event = threading.Event()
-        self._permission_result = 'deny'
         self._start_hook_server()
 
     def _start_hook_server(self):
@@ -550,49 +546,6 @@ class ClawdPet:
                     # 恢复随机状态
                     pet._claude_linked = False
                     pet.root.after(0, lambda: pet.sm.transition())
-                elif path == 'permission':
-                    # 权限请求：解析 body，弹出气泡，阻塞等待用户决定
-                    try:
-                        data = json.loads(body) if body else {}
-                    except json.JSONDecodeError:
-                        data = {}
-                    tool_name = data.get('tool_name', '未知工具')
-                    tool_input = data.get('tool_input', {})
-                    # 提取关键信息用于显示
-                    display_info = ''
-                    if isinstance(tool_input, dict):
-                        # Bash 命令
-                        if 'command' in tool_input:
-                            display_info = tool_input['command'][:120]
-                        # 文件操作
-                        elif 'file_path' in tool_input:
-                            display_info = tool_input['file_path']
-                        # 其他：显示前几个 key
-                        else:
-                            parts = [f"{k}: {str(v)[:40]}" for k, v in list(tool_input.items())[:3]]
-                            display_info = '\n'.join(parts)
-
-                    pet._permission_event.clear()
-                    pet.root.after(0, lambda tn=tool_name, di=display_info:
-                                   pet._show_permission_bubble(tn, di))
-
-                    # 阻塞等待（最多 60 秒）
-                    pet._permission_event.wait(timeout=60)
-                    decision = pet._permission_result
-
-                    result = json.dumps({
-                        'hookSpecificOutput': {
-                            'decision': {
-                                'behavior': decision
-                            }
-                        }
-                    })
-                    self.send_response(200)
-                    self.send_header('Content-Type', 'application/json')
-                    self.end_headers()
-                    self.wfile.write(result.encode())
-                    return
-
                 self.send_response(200)
                 self.send_header('Content-Type', 'text/plain')
                 self.end_headers()
@@ -610,84 +563,6 @@ class ClawdPet:
 
         t = threading.Thread(target=run_server, daemon=True)
         t.start()
-
-    # ─── 权限气泡 ─────────────────────────────────────────────
-
-    def _show_permission_bubble(self, tool_name, detail):
-        """在小螃蟹旁弹出权限请求气泡"""
-        bubble = tk.Toplevel(self.root)
-        bubble.overrideredirect(True)
-        bubble.wm_attributes('-topmost', True)
-        bubble.config(bg='#FFFFFF')
-
-        # 气泡位置：小螃蟹上方
-        pet_x = self.root.winfo_x()
-        pet_y = self.root.winfo_y()
-        bubble_w, bubble_h = 320, 180
-        bx = pet_x + CANVAS_W // 2 - bubble_w // 2
-        by = pet_y - bubble_h - 10
-        # 防止超出屏幕
-        if by < 10:
-            by = pet_y + CANVAS_H + 10
-        if bx < 10:
-            bx = 10
-        bubble.geometry(f'{bubble_w}x{bubble_h}+{bx}+{by}')
-
-        # 圆角边框效果（用 Frame 模拟）
-        frame = tk.Frame(bubble, bg='#FFFFFF', padx=12, pady=8)
-        frame.pack(fill='both', expand=True)
-
-        # 标题
-        title_text = f'🦀 权限请求'
-        tk.Label(frame, text=title_text, font=('Helvetica', 13, 'bold'),
-                 bg='#FFFFFF', fg='#333333', anchor='w').pack(fill='x')
-
-        # 工具名
-        tk.Label(frame, text=f'工具: {tool_name}', font=('Helvetica', 11),
-                 bg='#FFFFFF', fg='#666666', anchor='w').pack(fill='x', pady=(4, 0))
-
-        # 详情（截断显示）
-        if detail:
-            detail_display = detail if len(detail) <= 80 else detail[:77] + '...'
-            detail_label = tk.Label(frame, text=detail_display, font=('Courier', 10),
-                                    bg='#F5F5F5', fg='#444444', anchor='w',
-                                    wraplength=290, justify='left', padx=6, pady=4)
-            detail_label.pack(fill='x', pady=(4, 0))
-
-        # 按钮区
-        btn_frame = tk.Frame(frame, bg='#FFFFFF')
-        btn_frame.pack(fill='x', pady=(10, 0))
-
-        def on_allow():
-            self._permission_result = 'allow'
-            self._permission_event.set()
-            bubble.destroy()
-
-        def on_deny():
-            self._permission_result = 'deny'
-            self._permission_event.set()
-            bubble.destroy()
-
-        def on_timeout():
-            """超时自动关闭"""
-            if not self._permission_event.is_set():
-                on_deny()
-
-        deny_btn = tk.Button(btn_frame, text='✕ 拒绝', font=('Helvetica', 11),
-                             bg='#FF6B6B', fg='#FFFFFF', activebackground='#FF5252',
-                             relief='flat', padx=16, pady=4, command=on_deny)
-        deny_btn.pack(side='right', padx=(6, 0))
-
-        allow_btn = tk.Button(btn_frame, text='✓ 允许', font=('Helvetica', 11),
-                              bg='#51CF66', fg='#FFFFFF', activebackground='#40C057',
-                              relief='flat', padx=16, pady=4, command=on_allow)
-        allow_btn.pack(side='right')
-
-        # 55 秒后自动拒绝（留 5 秒余量给 HTTP 超时）
-        bubble.after(55000, on_timeout)
-
-        # 小螃蟹进入思考状态
-        self.sm.force_state('thinking')
 
     def _trigger_firework(self):
         """手动触发烟花"""

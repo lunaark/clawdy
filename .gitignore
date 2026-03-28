@@ -7,9 +7,13 @@ _npx/
 _update-notifier-last-checked
 .claude/
 
-# 音乐文件太大，不提交（用户自行添加）
-music/*.mp3
+# 音乐：只保留 3 首示例，其余忽略
 music/*.m4a
 music/*.wav
 music/*.aac
 music/*.flac
+music/*.mp3
+# 允许这 3 首示例音乐
+!music/晨光书页.mp3
+!music/云上小岛.mp3
+!music/静心之湖.mp3

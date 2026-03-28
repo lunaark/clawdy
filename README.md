@@ -52,12 +52,6 @@ python3 ~/animation/clawd_pet.py
 | error | 工具报错时 |
 | celebrate | 任务完成时 |
 
-### 权限气泡
-
-Claude Code 请求敏感权限时，小螃蟹头顶弹出气泡卡片，显示工具名和操作详情，可直接点击「允许」或「拒绝」。55 秒无操作自动拒绝。
-
-> 需要权限模式设为非自动放行才会触发。如果桌宠没运行，Claude Code 走默认行为。
-
 ## 眼睛跟随
 
 小螃蟹的眼睛会跟随鼠标方向看，有 40px 死区阈值避免抖动。
@@ -78,7 +72,7 @@ Claude Code 请求敏感权限时，小螃蟹头顶弹出气泡卡片，显示�
 - **缓动函数**：ease_out、ease_in_out、lerp
 - **动画状态机**：随机切换，每种状态 3-8 秒
 - **Claude Code 联动**：HTTP server（port 18900）+ Claude Code hooks
-- **权限处理**：PermissionRequest hook → 桌宠气泡 UI → 返回决定
+
 - **音乐**：subprocess 调用 afplay
 - **开机自启**：~/Library/LaunchAgents/com.clawd.pet.plist
 
@@ -93,8 +87,7 @@ Claude Code 请求敏感权限时，小螃蟹头顶弹出气泡卡片，显示�
 ├── sunset-beach.html     # 海边看日落动画
 └── README.md
 
-~/.claude/hooks/
-└── permission-handler.sh # 权限请求处理脚本
+
 ```
 
 ## 开机自启动管理
