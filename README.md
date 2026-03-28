@@ -1,8 +1,8 @@
-# Clawd Desktop Pet 🦀
+# Clawdy 🦀
 
-macOS 桌面像素风小螃蟹宠物，主角是 Claude 官方吉祥物 Clawd。
+macOS 像素风桌面宠物螃蟹，在你等待 Claude 的时候陪你编程。
 
-等 Claude 干活的时候，看它在旁边忙忙碌碌，让等待变得有趣。
+Clawdy 是基于 Claude 官方吉祥物 Clawd 的桌面小伙伴，等 Claude 干活的时候，看它在旁边忙忙碌碌，让等待变得有趣。
 
 ## 快速启动
 
