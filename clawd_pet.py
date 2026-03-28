@@ -48,6 +48,7 @@ COLORS = {
 # 音乐文件夹
 MUSIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'music')
 
+
 # Claude Code 联动 HTTP 端口
 HOOK_PORT = 18900
 
@@ -412,6 +413,35 @@ class PixelRenderer:
         self.px(fx, fy + 2, COLORS['fw_fuse'])
         self.px(fx, fy + 3, COLORS['fw_fuse'])
 
+    def draw_sign(self, sx, sy, text):
+        """举牌子：小木牌 + 文字"""
+        # 牌子颜色
+        board = '#DEB887'   # 木色
+        pole = '#8B7355'    # 木杆
+        # 根据文字长度画牌子（每个中文字约 2 格宽）
+        char_w = len(text)  # 估算
+        bw = max(char_w * 2 + 2, 6)
+        bh = 4
+        # 牌子背景
+        for y in range(bh):
+            for x in range(bw):
+                self.px(sx + x, sy + y, board)
+        # 牌子边框（上下）
+        for x in range(bw):
+            self.px(sx + x, sy, pole)
+            self.px(sx + x, sy + bh - 1, pole)
+        # 木杆
+        self.px(sx + bw // 2, sy + bh, pole)
+        self.px(sx + bw // 2, sy + bh + 1, pole)
+        # 文字（用 canvas 直接画文字，更清晰）
+        cx = (sx + bw / 2) * self.S
+        cy = (sy + bh / 2) * self.S
+        self.canvas.create_text(
+            cx, cy, text=text,
+            font=('Helvetica', 7, 'bold'), fill='#5D4037',
+            anchor='center', tags='sprite'
+        )
+
 
 # ─── 动画状态机 ───────────────────────────────────────────────
 class StateMachine:
@@ -500,8 +530,6 @@ class ClawdPet:
 
         # 右键菜单
         self.menu = tk.Menu(self.root, tearoff=0)
-        self.menu.add_command(label='🦀 Clawd Desktop Pet', state='disabled')
-        self.menu.add_separator()
         self.menu.add_command(label='🎵 播放音乐', command=self._toggle_music)
         self.menu.add_command(label='⏭ 下一首', command=self._next_music)
         self.menu.add_separator()
@@ -515,8 +543,23 @@ class ClawdPet:
         self.cx = 11
         self.cy = 18
 
+        # 鼠标静止检测
+        self._last_mouse_x = 0
+        self._last_mouse_y = 0
+        self._mouse_idle_frames = 0
+        self._mouse_idle_threshold = FPS * 60 * 2   # 2 分钟没动鼠标 → 歪头看你
+        self._is_looking_at_user = False
+
+        # 久坐提醒
+        self._work_frames = 0
+        self._drink_reminder_interval = FPS * 60 * 45  # 每 45 分钟提醒一次
+        self._showing_drink_sign = False
+        self._drink_sign_frames = 0
+        self._drink_sign_duration = FPS * 12  # 牌子显示 12 秒
+
         # Claude Code 联动: 启动 HTTP server
         self._claude_linked = False
+        self._boot_frame = 0  # 启动后计帧，前几秒忽略 hook
         self._start_hook_server()
 
     def _start_hook_server(self):
@@ -539,9 +582,13 @@ class ClawdPet:
                 }
 
                 new_state = state_map.get(path)
-                if new_state:
+                if new_state and pet._boot_frame >= FPS * 3:
                     pet._claude_linked = True
-                    pet.root.after(0, lambda: pet.sm.force_state(new_state))
+                    # 不重置 frame，保持动画连贯
+                    pet.sm.state = new_state
+                    pet.sm.timer = 0.0
+                    pet.sm.duration = 10.0
+                    pet.sm.paused = False
                 elif path == 'idle':
                     # 恢复随机状态
                     pet._claude_linked = False
@@ -603,7 +650,7 @@ class ClawdPet:
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
         )
         self._music_playing = True
-        self.menu.entryconfigure(2, label='⏹ 停止音乐')
+        self.menu.entryconfigure(0, label='⏹ 停止音乐')
         self._check_music_end()
 
     def _stop_music(self):
@@ -611,7 +658,7 @@ class ClawdPet:
             self._music_proc.terminate()
             self._music_proc = None
         self._music_playing = False
-        self.menu.entryconfigure(2, label='🎵 播放音乐')
+        self.menu.entryconfigure(0, label='🎵 播放音乐')
 
     def _next_music(self):
         if not self._music_files:
@@ -700,14 +747,20 @@ class ClawdPet:
         blink_cycle = f % 60
         if blink_cycle >= 56:
             eyes = 'blink'
+        elif self._is_looking_at_user:
+            # 鼠标久没动 → 歪头看你（眼睛朝上）
+            eyes = 'up'
         else:
             # 眼睛跟随鼠标
             eyes = self._get_mouse_eye_offset(ox, oy)
 
-        # 身体微微倾斜（根据鼠标水平方向）
+        # 身体微微倾斜
         lean = 0
-        if isinstance(eyes, tuple) and eyes[0] != 0:
-            lean = eyes[0]  # -1 或 1
+        if self._is_looking_at_user:
+            # 歪头：身体微微偏一边
+            lean = 1 if (f // 30) % 2 == 0 else -1
+        elif isinstance(eyes, tuple) and eyes[0] != 0:
+            lean = eyes[0]
 
         self.renderer.draw_body(ox + lean, oy)
         self.renderer.draw_eyes(ox + lean, oy, eyes)
@@ -912,9 +965,9 @@ class ClawdPet:
     def _draw_cc_working(self, f):
         """Claude Code: 执行工具 — 快速打字"""
         ox, oy = self.cx, self.cy
-        # 小幅快速点头
-        nod = round(abs(math.sin(f * 0.5)) * 0.8)
-        oy += nod
+        # 微微呼吸，不跳动
+        breath = round(math.sin(f * 0.1) * 0.5)
+        oy += breath
         self.renderer.draw_body(ox, oy, claw_extra=CLAW_BOTH_UP)
         eyes = 'forward' if f % 30 > 3 else 'blink'
         self.renderer.draw_eyes(ox, oy, eyes)
@@ -948,12 +1001,12 @@ class ClawdPet:
         self.renderer.draw_sweat(ox, oy, f)
 
     def _draw_celebrate(self, f):
-        """Claude Code: 完成 — 开心弹跳 + 粒子庆祝"""
+        """Claude Code: 完成 — 开心举钳子 + 粒子庆祝"""
         ox, oy = self.cx, self.cy
-        bounce = round(abs(math.sin(f * 0.4)) * 3)
-        oy -= bounce
-        self.renderer.draw_body(ox, oy, claw_extra=CLAW_BOTH_UP)
-        self.renderer.draw_eyes(ox, oy, 'happy')
+        breath = round(math.sin(f * 0.1) * 0.5)
+        oy += breath
+        self.renderer.draw_body(ox, oy)
+        self.renderer.draw_eyes(ox, oy, 'forward')
         self.renderer.draw_blush(ox, oy)
         # 五彩粒子庆祝
         if f % 3 == 0:
@@ -1057,9 +1110,43 @@ class ClawdPet:
 
     # ─── 主循环 ───────────────────────────────────────────────
 
+    def _update_awareness(self):
+        """更新鼠标静止检测和久坐提醒"""
+        # 鼠标静止检测
+        try:
+            mx = self.root.winfo_pointerx()
+            my = self.root.winfo_pointery()
+        except tk.TclError:
+            return
+
+        if mx != self._last_mouse_x or my != self._last_mouse_y:
+            self._last_mouse_x = mx
+            self._last_mouse_y = my
+            self._mouse_idle_frames = 0
+            self._is_looking_at_user = False
+        else:
+            self._mouse_idle_frames += 1
+            if self._mouse_idle_frames >= self._mouse_idle_threshold:
+                self._is_looking_at_user = True
+
+        # 久坐提醒计时
+        self._work_frames += 1
+        if self._showing_drink_sign:
+            self._drink_sign_frames += 1
+            if self._drink_sign_frames >= self._drink_sign_duration:
+                self._showing_drink_sign = False
+                self._drink_sign_frames = 0
+        elif self._work_frames >= self._drink_reminder_interval:
+            self._showing_drink_sign = True
+            self._drink_sign_frames = 0
+            self._work_frames = 0
+
     def _game_loop(self):
         self.renderer.clear()
         self.sm.update(1.0 / FPS)
+        self._update_awareness()
+        if self._boot_frame < FPS * 3:
+            self._boot_frame += 1
 
         state = self.sm.state
         f = self.sm.frame
@@ -1086,6 +1173,19 @@ class ClawdPet:
         draw_fn = draw_map.get(state)
         if draw_fn:
             draw_fn()
+
+        # 歪头看你：鼠标久没动，idle 状态下眼睛看向上方（看你的脸）
+        if self._is_looking_at_user and state == 'idle':
+            ox, oy = self.cx, self.cy
+            # 在身体旁画一个小问号气泡
+            if (f // 20) % 3 != 0:  # 闪烁效果
+                self.renderer.px(ox + 15, oy - 1, COLORS['zzz'])  # 小点表示好奇
+
+        # 久坐提醒：举牌子
+        if self._showing_drink_sign:
+            ox, oy = self.cx, self.cy
+            # 牌子在小螃蟹头顶
+            self.renderer.draw_sign(ox + 1, oy - 6, '喝水')
 
         # 更新和绘制粒子
         self.particles.update()

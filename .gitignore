@@ -1,6 +1,7 @@
 __pycache__/
 *.pyc
 .DS_Store
+config.json
 _cacache/
 _logs/
 _npx/

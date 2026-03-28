@@ -47,10 +47,17 @@ python3 ~/animation/clawd_pet.py
 
 | 状态 | 触发时机 |
 |------|----------|
-| thinking | 发送 prompt 时 |
-| cc_working | 调用工具时 |
-| error | 工具报错时 |
-| celebrate | 任务完成时 |
+| thinking | 发送 prompt 时，头顶思考气泡 |
+| cc_working | 调用工具时，面对屏幕写代码 |
+| error | 工具报错时，身体颤抖 + 冒烟 |
+| celebrate | 任务完成时，腮红 + 粒子庆祝 |
+
+### 小伙伴关心
+
+| 行为 | 触发条件 |
+|------|----------|
+| 歪头看你 | 鼠标 2 分钟没动，它会抬头看你 |
+| 喝水提醒 | 连续工作 45 分钟，头顶举起"喝水"小牌子 |
 
 ## 眼睛跟随
 
@@ -58,7 +65,7 @@ python3 ~/animation/clawd_pet.py
 
 ## 音乐播放
 
-把音频文件放到 `~/animation/music/` 文件夹：
+内置 3 首轻音乐，开箱可用。也可以把更多音频文件放到 `music/` 文件夹：
 - 支持格式：mp3、m4a、wav、aac、flac
 - 自动随机播放，播完自动下一首
 - 使用 macOS 自带 afplay，零依赖
@@ -72,7 +79,6 @@ python3 ~/animation/clawd_pet.py
 - **缓动函数**：ease_out、ease_in_out、lerp
 - **动画状态机**：随机切换，每种状态 3-8 秒
 - **Claude Code 联动**：HTTP server（port 18900）+ Claude Code hooks
-
 - **音乐**：subprocess 调用 afplay
 - **开机自启**：~/Library/LaunchAgents/com.clawd.pet.plist
 
@@ -81,13 +87,11 @@ python3 ~/animation/clawd_pet.py
 ```
 ~/animation/
 ├── clawd_pet.py          # 桌面宠物主程序
-├── music/                # 音乐文件夹
+├── music/                # 音乐文件夹（内置 3 首）
 │   └── *.mp3
 ├── dancing-clawd.html    # Clawd 跳舞动画
 ├── sunset-beach.html     # 海边看日落动画
 └── README.md
-
-
 ```
 
 ## 开机自启动管理
