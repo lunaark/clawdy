@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clawd Watches the Sunset</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #E8E5E0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    font-family: 'Courier New', monospace;
+    overflow: hidden;
+  }
+  canvas {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    border-radius: 8px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  }
+  .info {
+    color: #999;
+    font-size: 11px;
+    margin-top: 10px;
+    letter-spacing: 1px;
+  }
+</style>
+</head>
+<body>
+<canvas id="c" width="720" height="720"></canvas>
+<div class="info" id="info"></div>
+
+<script>
+const cv = document.getElementById('c');
+const ctx = cv.getContext('2d');
+
+const PALETTE = {
+  background: { bg: '#F9F7F4', dot: '#E0DDD8', page: '#E8E5E0' },
+  stars:      { dark: '#333333', mid: '#888888', light: '#BBBBBB' },
+  clawd:      { body: '#CD6E58', eye: '#000000' },
+  ui:         { white: '#FFFFFF', bubbleBorder: '#888888', textDark: '#333333' },
+  // sunset scene colors
+  sky:        { top: '#6B4C9A', mid: '#D4637A', warm: '#F0936E', gold: '#FFB347', pale: '#FFE4B5' },
+  sun:        { core: '#FFD700', glow: '#FFA500', rim: '#FF6347' },
+  sea:        { deep: '#2E5A7E', mid: '#3A7CA5', light: '#5BA4CF', foam: '#C8E6F0', sparkle: '#FFE8A0' },
+  sand:       { base: '#E8D5A3', dark: '#D4BC7C', wet: '#C4A86A' },
+  bird:       { body: '#444444' },
+  blush:      '#FAC8D8',
+  heart:      '#F06090'
+};
+
+const PX = 20;
+const GW = cv.width / PX;
+const GH = cv.height / PX;
+
+function px(gx, gy, col) {
+  ctx.fillStyle = col;
+  ctx.fillRect(gx * PX, gy * PX, PX, PX);
+}
+
+const CLAWD_BODY = {
+  width: 14, height: 8,
+  data: [
+    [0,0,0,1,1,1,1,1,1,1,1,0,0,0],
+    [0,0,0,1,1,1,1,1,1,1,1,0,0,0],
+    [0,1,1,1,1,1,1,1,1,1,1,1,1,0],
+    [0,1,1,1,1,1,1,1,1,1,1,1,1,0],
+    [0,0,0,1,1,1,1,1,1,1,1,0,0,0],
+    [0,0,0,1,1,1,1,1,1,1,1,0,0,0],
+    [0,0,0,1,0,1,0,0,1,0,1,0,0,0],
+    [0,0,0,1,0,1,0,0,1,0,1,0,0,0]
+  ],
+  anchors: {
+    eyeLeft:   { x: 4,  y: 1 },
+    eyeRight:  { x: 9,  y: 1 },
+  }
+};
+
+const EYES = {
+  forward:    { left: {dx:0,dy:0}, right: {dx:0,dy:0} },
+  look_right: { left: {dx:1,dy:0}, right: {dx:1,dy:0} },
+  look_left:  { left: {dx:-1,dy:0}, right: {dx:-1,dy:0} },
+  look_down:  { left: {dx:0,dy:1}, right: {dx:0,dy:1} },
+  blink:      { type: 'hidden' }
+};
+
+const HEART = [
+  [1,0,1,0,0],
+  [1,1,1,1,0],
+  [0,1,1,1,0],
+  [0,0,1,0,0]
+];
+
+function drawClawd(ox, oy, opts = {}) {
+  const eyeVariant = opts.eyes || 'forward';
+  const bodyCol = PALETTE.clawd.body;
+  const eyeCol = PALETTE.clawd.eye;
+  for (let r = 0; r < CLAWD_BODY.height; r++) {
+    for (let c = 0; c < CLAWD_BODY.width; c++) {
+      if (CLAWD_BODY.data[r][c] === 1) px(ox + c, oy + r, bodyCol);
+    }
+  }
+  const ev = EYES[eyeVariant];
+  if (ev && ev.type !== 'hidden') {
+    const el = CLAWD_BODY.anchors.eyeLeft;
+    const er = CLAWD_BODY.anchors.eyeRight;
+    px(ox + el.x + ev.left.dx, oy + el.y + ev.left.dy, eyeCol);
+    px(ox + er.x + ev.right.dx, oy + er.y + ev.right.dy, eyeCol);
+  }
+}
+
+function drawHeart(hx, hy, col) {
+  for (let r = 0; r < HEART.length; r++) {
+    for (let c = 0; c < HEART[r].length; c++) {
+      if (HEART[r][c] === 1) px(hx + c - 1, hy + r, col);
+    }
+  }
+}
+
+function drawBlush(ox, oy, a) {
+  ctx.globalAlpha = a;
+  px(ox + 3, oy + 2, PALETTE.blush);
+  px(ox + 10, oy + 2, PALETTE.blush);
+  ctx.globalAlpha = 1;
+}
+
+let particles = [];
+function addParticle(x, y, col) {
+  particles.push({ x, y, vx: (Math.random() - 0.5) * 0.8, vy: -Math.random() * 0.8 - 0.3, life: 1.0, col });
+}
+function tickParticles() {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx; p.y += p.vy; p.vy += 0.04; p.life -= 0.02;
+    if (p.life <= 0) { particles.splice(i, 1); continue; }
+    if (p.life > 0.15) px(Math.round(p.x), Math.round(p.y), p.col);
+  }
+}
+
+function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
+function easeInOut(t) { return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3) / 2; }
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+// ═══ YOUR ANIMATION HERE ════════════════════════════════════
+
+const FPS = 30;
+const DUR = 7;
+const TOTAL = FPS * DUR;
+
+// --- Sky gradient ---
+function drawSky(sunProgress) {
+  // sunProgress: 0 = sun high, 1 = sun set
+  const colors = [];
+  for (let y = 0; y < 22; y++) {
+    const yp = y / 22;
+    let r, g, b;
+    if (yp < 0.3) {
+      // top sky: purple to pink
+      const m = yp / 0.3;
+      r = Math.round(lerp(107 + sunProgress * 30, 212, m));
+      g = Math.round(lerp(76 - sunProgress * 20, 99, m));
+      b = Math.round(lerp(154 + sunProgress * 20, 122, m));
+    } else if (yp < 0.6) {
+      // mid sky: pink to warm orange
+      const m = (yp - 0.3) / 0.3;
+      r = Math.round(lerp(212, 240, m));
+      g = Math.round(lerp(99, 147 + sunProgress * 20, m));
+      b = Math.round(lerp(122, 110 - sunProgress * 30, m));
+    } else {
+      // low sky: warm orange to gold
+      const m = (yp - 0.6) / 0.4;
+      r = Math.round(lerp(240, 255, m));
+      g = Math.round(lerp(147, 179 + sunProgress * 30, m));
+      b = Math.round(lerp(80, 71 + sunProgress * 40, m));
+    }
+    const col = `rgb(${r},${g},${b})`;
+    for (let x = 0; x < 36; x++) {
+      px(x, y, col);
+    }
+  }
+}
+
+// --- Sun ---
+function drawSun(cx, cy) {
+  // 3x3 core + glow
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      px(cx + dx, cy + dy, PALETTE.sun.core);
+    }
+  }
+  // glow ring
+  px(cx - 2, cy, PALETTE.sun.glow); px(cx + 2, cy, PALETTE.sun.glow);
+  px(cx, cy - 2, PALETTE.sun.glow); px(cx, cy + 2, PALETTE.sun.glow);
+  px(cx - 2, cy - 1, PALETTE.sun.rim); px(cx + 2, cy - 1, PALETTE.sun.rim);
+  px(cx - 2, cy + 1, PALETTE.sun.rim); px(cx + 2, cy + 1, PALETTE.sun.rim);
+  px(cx - 1, cy - 2, PALETTE.sun.rim); px(cx + 1, cy - 2, PALETTE.sun.rim);
+}
+
+// --- Sea ---
+function drawSea(f, sunX) {
+  const seaTop = 22;
+  for (let y = seaTop; y < 28; y++) {
+    const depth = (y - seaTop) / 6;
+    const col = depth < 0.3 ? PALETTE.sea.light : depth < 0.6 ? PALETTE.sea.mid : PALETTE.sea.deep;
+    for (let x = 0; x < 36; x++) {
+      px(x, y, col);
+    }
+  }
+  // waves / foam line
+  for (let x = 0; x < 36; x++) {
+    const wave = Math.sin(f * 0.1 + x * 0.7) * 0.5;
+    if (wave > 0.2) px(x, seaTop, PALETTE.sea.foam);
+  }
+  // sun reflection on water
+  for (let y = seaTop + 1; y < 27; y++) {
+    const shimmer = Math.sin(f * 0.15 + y * 2) * 0.5 + 0.5;
+    if (shimmer > 0.6) {
+      const sx = sunX + Math.round(Math.sin(f * 0.08 + y) * 2);
+      px(sx, y, PALETTE.sea.sparkle);
+      if (Math.sin(f * 0.12 + y * 3) > 0.3) px(sx + 1, y, PALETTE.sea.sparkle);
+    }
+  }
+}
+
+// --- Sand ---
+function drawSand() {
+  for (let y = 28; y < 36; y++) {
+    for (let x = 0; x < 36; x++) {
+      const isWet = y === 28 && Math.random() > 0.5;
+      px(x, y, isWet ? PALETTE.sand.wet : (Math.random() > 0.9 ? PALETTE.sand.dark : PALETTE.sand.base));
+    }
+  }
+}
+
+// --- Seagull (simple 5-pixel bird) ---
+function drawBird(bx, by, wingUp) {
+  const col = PALETTE.bird.body;
+  px(Math.round(bx), Math.round(by), col);
+  if (wingUp) {
+    px(Math.round(bx - 1), Math.round(by - 1), col);
+    px(Math.round(bx + 1), Math.round(by - 1), col);
+    px(Math.round(bx - 2), Math.round(by - 2), col);
+    px(Math.round(bx + 2), Math.round(by - 2), col);
+  } else {
+    px(Math.round(bx - 1), Math.round(by + 1), col);
+    px(Math.round(bx + 1), Math.round(by + 1), col);
+    px(Math.round(bx - 2), Math.round(by), col);
+    px(Math.round(bx + 2), Math.round(by), col);
+  }
+}
+
+function getPhase(t) {
+  if (t < 0.12) return { ph: 'enter', pt: t / 0.12 };
+  if (t < 0.30) return { ph: 'settle', pt: (t - 0.12) / 0.18 };
+  if (t < 0.65) return { ph: 'sunset', pt: (t - 0.30) / 0.35 };
+  if (t < 0.82) return { ph: 'seagull', pt: (t - 0.65) / 0.17 };
+  return { ph: 'peace', pt: (t - 0.82) / 0.18 };
+}
+
+function render(f) {
+  const t = f / TOTAL;
+  const { ph, pt } = getPhase(t);
+
+  // sun position: sinks over time
+  let sunSink = 0;
+  if (ph === 'enter') sunSink = 0;
+  else if (ph === 'settle') sunSink = pt * 0.15;
+  else if (ph === 'sunset') sunSink = 0.15 + pt * 0.6;
+  else if (ph === 'seagull') sunSink = 0.75 + pt * 0.15;
+  else sunSink = 0.9 + pt * 0.1;
+
+  const sunX = 12;
+  const sunBaseY = 16;
+  const sunY = sunBaseY + Math.round(sunSink * 8);
+
+  // draw sky
+  drawSky(sunSink);
+
+  // draw sun (hide when below horizon)
+  if (sunY < 23) drawSun(sunX, sunY);
+
+  // draw sea
+  drawSea(f, sunX);
+
+  // draw sand (deterministic seed per frame mod)
+  // use a simple pattern instead of random for sand
+  for (let y = 28; y < 36; y++) {
+    for (let x = 0; x < 36; x++) {
+      const pattern = ((x * 7 + y * 13) % 11);
+      const col = y === 28 ? PALETTE.sand.wet : (pattern < 1 ? PALETTE.sand.dark : PALETTE.sand.base);
+      px(x, y, col);
+    }
+  }
+
+  // clawd position
+  let cx = 18, cy = 22;
+  let eyes = 'look_left';
+
+  if (ph === 'enter') {
+    // walk in from right
+    cx = Math.round(lerp(38, 18, easeOut(pt)));
+    cy = 22;
+    eyes = 'look_left';
+    // walking bounce
+    const walkBounce = Math.round(Math.abs(Math.sin(pt * Math.PI * 6)) * 1);
+    cy -= walkBounce;
+  } else if (ph === 'settle') {
+    // settle down, look toward sun
+    eyes = pt < 0.5 ? 'forward' : 'look_left';
+    // gentle breathing
+    const breath = Math.round(Math.sin(pt * Math.PI * 2) * 0.5);
+    cy += breath;
+  } else if (ph === 'sunset') {
+    // watching sun go down
+    eyes = pt < 0.7 ? 'look_left' : (Math.sin(pt * Math.PI * 4) > 0 ? 'blink' : 'look_left');
+    const breath = Math.round(Math.sin(f * 0.1) * 0.5);
+    cy += breath;
+    // occasional sparkle particles from sea
+    if (f % 12 === 0) {
+      addParticle(sunX + Math.random() * 4, 22, PALETTE.sea.sparkle);
+    }
+  } else if (ph === 'seagull') {
+    eyes = 'look_right';
+    // look up at the bird briefly
+    if (pt > 0.3 && pt < 0.7) eyes = 'forward';
+    const breath = Math.round(Math.sin(f * 0.1) * 0.5);
+    cy += breath;
+  } else {
+    // peace phase
+    const blinkF = Math.sin(pt * Math.PI * 3);
+    eyes = blinkF > 0.8 ? 'blink' : 'look_left';
+    const breath = Math.round(Math.sin(f * 0.1) * 0.5);
+    cy += breath;
+    // love heart floats up
+    if (pt > 0.3) {
+      const heartAlpha = Math.min((pt - 0.3) * 3, 1);
+      const hy = cy - 3 - Math.round((pt - 0.3) * 6);
+      ctx.globalAlpha = heartAlpha;
+      drawHeart(cx + 15, hy, PALETTE.heart);
+      ctx.globalAlpha = 1;
+    }
+    if (f % 10 === 0 && pt > 0.2) {
+      addParticle(cx + 7 + Math.random() * 4, cy - 2, PALETTE.heart);
+    }
+  }
+
+  // draw Clawd on the sand
+  drawClawd(cx, cy, { eyes });
+
+  // blush in peace phase
+  if (ph === 'peace' && pt > 0.2) drawBlush(cx, cy, 0.7);
+  if (ph === 'sunset' && pt > 0.5) drawBlush(cx, cy, pt * 0.5);
+
+  // seagull flight
+  if (ph === 'seagull' || (ph === 'peace' && pt < 0.3)) {
+    let birdT = ph === 'seagull' ? pt : 1 + pt / 0.3 * 0.3;
+    const bx = lerp(-3, 40, birdT * 0.8);
+    const by = lerp(12, 8, Math.sin(birdT * Math.PI));
+    const wingUp = Math.sin(birdT * Math.PI * 12) > 0;
+    drawBird(bx, by, wingUp);
+  }
+
+  // second distant bird in sunset phase
+  if (ph === 'sunset' && pt > 0.4) {
+    const bt2 = (pt - 0.4) / 0.6;
+    const bx2 = lerp(-5, 30, bt2);
+    const by2 = 6 + Math.sin(bt2 * Math.PI * 8) * 1;
+    const wingUp2 = Math.sin(bt2 * Math.PI * 10) > 0;
+    drawBird(bx2, by2, wingUp2);
+  }
+
+  tickParticles();
+}
+
+// ═══ LOOP ═══════════════════════════════════════════════════
+let startTime = null;
+
+function loop(ts) {
+  if (!startTime) startTime = ts;
+  const elapsed = (ts - startTime) / 1000;
+  const loopT = elapsed % DUR;
+  const frame = Math.floor(loopT * FPS);
+
+  if (loopT < 0.05) particles = [];
+
+  render(frame);
+
+  document.getElementById('info').textContent =
+    `clawd watches the sunset — ${loopT.toFixed(1)}s / ${DUR}.0s`;
+
+  requestAnimationFrame(loop);
+}
+
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.DS_Store
+_cacache/
+_logs/
+_npx/
+_update-notifier-last-checked
+.claude/
+
+# 音乐文件太大，不提交（用户自行添加）
+music/*.mp3
+music/*.m4a
+music/*.wav
+music/*.aac
+music/*.flac

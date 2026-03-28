@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dancing Clawd</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#E8E5E0;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:'Courier New',monospace;overflow:hidden}
+  canvas{image-rendering:pixelated;image-rendering:crisp-edges;border-radius:8px;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+  .info{color:#999;font-size:11px;margin-top:10px;letter-spacing:1px}
+</style>
+</head>
+<body>
+<canvas id="c" width="720" height="720"></canvas>
+<div class="info" id="info"></div>
+<script>
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+
+const P={
+  bg:'#F9F7F4',dot:'#E0DDD8',
+  sd:'#333',sm:'#888',sl:'#BBB',
+  body:'#CD6E58',eye:'#000',
+  w:'#FFF',blush:'#FAC8D8',pink:'#F06090',pinkDeep:'#C84060',
+  note1:'#FFD700',note2:'#FF69B4',note3:'#87CEEB',
+};
+
+const PX=20,GW=36,GH=36;
+function px(x,y,c){ctx.fillStyle=c;ctx.fillRect(x*PX,y*PX,PX,PX)}
+
+const BODY=[
+  [0,0,0,1,1,1,1,1,1,1,1,0,0,0],
+  [0,0,0,1,1,1,1,1,1,1,1,0,0,0],
+  [0,1,1,1,1,1,1,1,1,1,1,1,1,0],
+  [0,1,1,1,1,1,1,1,1,1,1,1,1,0],
+  [0,0,0,1,1,1,1,1,1,1,1,0,0,0],
+  [0,0,0,1,1,1,1,1,1,1,1,0,0,0],
+  [0,0,0,1,0,1,0,0,1,0,1,0,0,0],
+  [0,0,0,1,0,1,0,0,1,0,1,0,0,0]
+];
+const EL={x:4,y:1},ER={x:9,y:1};
+const EYES={forward:{dl:0,dr:0,dy:0},right:{dl:1,dr:1,dy:0},left:{dl:-1,dr:-1,dy:0},down:{dl:0,dr:0,dy:1},blink:null};
+const HEART=[[1,0,1],[1,1,1],[0,1,0]];
+const STARS=[
+  [4,3,0],[14,2,0],[27,1,0],[31,3,1],[6,7,0],[19,5,2],[24,6,1],
+  [9,10,0],[2,13,0],[33,8,0],[29,12,0],[7,16,1],[3,20,0],[30,18,1],
+  [1,25,0],[33,24,0],[5,30,2],[28,28,1],[15,9,2],[21,14,1]
+];
+
+function drawBg(){
+  ctx.fillStyle=P.bg;ctx.fillRect(0,0,720,720);
+  for(let y=1;y<GH;y+=2)for(let x=1;x<GW;x+=2){
+    ctx.fillStyle=P.dot;ctx.beginPath();ctx.arc(x*PX+10,y*PX+10,2,0,6.28);ctx.fill();
+  }
+}
+function drawStars(f){
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  for(const[x,y,t]of STARS){
+    const tw=Math.sin(f*.08+x*.5+y*.3);
+    ctx.fillStyle=t===0?(tw>0?P.sd:P.sm):t===1?(tw>.3?P.sm:P.sl):(tw>0?P.sl:P.dot);
+    ctx.font=`bold ${t===0?14:10}px serif`;
+    ctx.fillText('✳',x*PX+10,y*PX+10);
+  }
+}
+function drawClawd(ox,oy,eyes='forward'){
+  for(let r=0;r<8;r++)for(let c=0;c<14;c++)if(BODY[r][c])px(ox+c,oy+r,P.body);
+  const e=EYES[eyes];
+  if(e){px(ox+EL.x+e.dl,oy+EL.y+e.dy,P.eye);px(ox+ER.x+e.dr,oy+ER.y+e.dy,P.eye)}
+}
+function drawBlush(ox,oy,a){ctx.globalAlpha=a;px(ox+3,oy+2,P.blush);px(ox+10,oy+2,P.blush);ctx.globalAlpha=1}
+function drawClawdWave(ox,oy,eyes,side='right'){
+  drawClawd(ox,oy,eyes);
+  if(side==='right'){px(ox+13,oy+1,P.body);px(ox+14,oy,P.body)}
+  else{px(ox+0,oy+1,P.body);px(ox-1,oy,P.body)}
+}
+function drawHeart(hx,hy,c){for(let r=0;r<3;r++)for(let i=0;i<3;i++)if(HEART[r][i])px(hx+i,hy+r,c)}
+
+let particles=[];
+function addP(x,y,c){particles.push({x,y,vx:(Math.random()-.5)*.8,vy:-Math.random()*.8-.3,life:1,c})}
+function tickP(){
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];p.x+=p.vx;p.y+=p.vy;p.vy+=.04;p.life-=.025;
+    if(p.life<=0){particles.splice(i,1);continue}
+    if(p.life>.15)px(Math.round(p.x),Math.round(p.y),p.c);
+  }
+}
+
+function easeOut(t){return 1-Math.pow(1-t,3)}
+function easeInOut(t){return t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2}
+function lerp(a,b,t){return a+(b-a)*t}
+
+// draw a music note
+function drawNote(nx,ny,c){
+  px(nx,ny,c);px(nx,ny+1,c);px(nx,ny+2,c);
+  px(nx+1,ny,c);px(nx-1,ny+2,c);
+}
+
+// ═══ YOUR ANIMATION HERE ════════════════════════════
+const FPS=30, DUR=3, TOTAL=FPS*DUR;
+
+function getPhase(t){
+  if(t<0.2) return {ph:'enter',pt:t/0.2};
+  return {ph:'dance',pt:(t-0.2)/0.8};
+}
+
+function render(f){
+  const t=f/TOTAL, {ph,pt}=getPhase(t);
+  drawBg(); drawStars(f);
+
+  let cx=11, cy=14, eyes='forward';
+
+  if(ph==='enter'){
+    // bounce in from below
+    cy=Math.round(lerp(38,14,easeOut(pt)));
+  } else {
+    // dancing: sway left-right + bounce
+    const sway=Math.sin(pt*Math.PI*8)*2;
+    cx=11+Math.round(sway);
+    const bounce=Math.round(Math.abs(Math.sin(pt*Math.PI*8))*3);
+    cy=14-bounce;
+
+    // alternate eyes with the beat
+    const beat=Math.sin(pt*Math.PI*8);
+    eyes=beat>0.5?'right':beat<-0.5?'left':(beat>0?'blink':'forward');
+
+    // alternate waving claws
+    const waveSide=Math.sin(pt*Math.PI*4)>0?'right':'left';
+    drawClawdWave(cx,cy,eyes,waveSide);
+    drawBlush(cx,cy,0.5);
+
+    // music notes floating up
+    if(f%8===0){
+      const noteColors=[P.note1,P.note2,P.note3];
+      const nc=noteColors[Math.floor(Math.random()*3)];
+      addP(cx+Math.random()*14, cy-2, nc);
+    }
+
+    // draw floating music notes at fixed spots
+    const n1y=cy-5-Math.round(Math.sin(pt*Math.PI*6)*2);
+    const n2y=cy-6-Math.round(Math.cos(pt*Math.PI*6)*2);
+    drawNote(cx-3,n1y,P.note1);
+    drawNote(cx+17,n2y,P.note2);
+
+    tickP();
+    return;
+  }
+
+  drawClawd(cx,cy,eyes);
+  tickP();
+}
+// ═══ LOOP (do not modify) ═══════════════════════════
+let st=null;
+function loop(ts){
+  if(!st)st=ts;const el=(ts-st)/1000,lt=el%DUR,f=Math.floor(lt*FPS);
+  if(lt<.05)particles=[];render(f);
+  document.getElementById('info').textContent=`Dancing Clawd — ${lt.toFixed(1)}s/${DUR}s`;
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
