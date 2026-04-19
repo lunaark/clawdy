@@ -1,7 +1,7 @@
 # Clawdy 🦀
 
 <p align="center">
-  <img src="screenshots/dancing-clawd.gif" alt="Clawdy dancing" width="320" />
+  <img src="screenshots/breathing-clawd.gif" alt="Clawdy breathing" width="240" />
 </p>
 
 [English](#english) | [中文](#中文)
