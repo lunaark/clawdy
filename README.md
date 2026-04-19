@@ -1,5 +1,9 @@
 # Clawdy 🦀
 
+<p align="center">
+  <img src="screenshots/dancing-clawd.gif" alt="Clawdy dancing" width="320" />
+</p>
+
 [English](#english) | [中文](#中文)
 
 ---
@@ -99,6 +103,12 @@ When you're using Claude Code, Clawdy reflects the work status in real time via 
 | "Drink water" sign | After 45 minutes of continuous work |
 
 ### Scenes
+
+<p align="center">
+  <img src="screenshots/sunset-beach.gif" alt="Sunset beach scene" width="320" />
+  &nbsp;&nbsp;
+  <img src="screenshots/fireworks-clawd.gif" alt="Clawd logo fireworks" width="320" />
+</p>
 
 - **Home** (default): transparent desktop — Clawdy walks across your actual screen.
 - **Beach**: pixel sunset scene with animated waves and a reflected sun. Toggle via the menu.
@@ -234,6 +244,12 @@ Clawdy 的心情会被你的打卡行为影响，进而改变随机状态出现�
 
 ### 场景切换
 
+<p align="center">
+  <img src="screenshots/sunset-beach.gif" alt="日落沙滩场景" width="320" />
+  &nbsp;&nbsp;
+  <img src="screenshots/fireworks-clawd.gif" alt="Claude logo 烟花" width="320" />
+</p>
+
 - **Home**（默认）：透明桌面——小螃蟹在你真实的屏幕上横着走。
 - **Beach**：像素风日落沙滩，带动画海浪和夕阳倒影。菜单切换。
 
@@ -281,6 +297,7 @@ clawdy/
 ├── checkin.json          # Check-in data (auto-generated)
 ├── music/                # Music folder (3 built-in tracks)
 │   └── *.mp3
+├── screenshots/          # README assets (GIFs)
 ├── dancing-clawd.html    # Clawd dancing animation (standalone)
 ├── sunset-beach.html     # Sunset beach animation (standalone)
 ├── STORY.md              # The story behind Clawdy
