@@ -10,7 +10,7 @@
 
 ## English
 
-A pixel-art desktop pet crab for macOS / Windows / Linux — your coding companion while waiting for Claude, with a built-in habit check-in system that shapes its mood.
+A pixel-art desktop pet crab for macOS (Windows / Linux experimental, untested) — your coding companion while waiting for Claude, with a built-in habit check-in system that shapes its mood.
 
 Clawdy is based on Claude's official mascot Clawd. While Claude is working, watch your little crab buddy do its thing — it makes the wait actually fun. Stick with your check-ins and Clawdy gets visibly happier; slack off and it looks a little down.
 
@@ -128,7 +128,7 @@ Comes with 3 built-in lo-fi tracks. Drop more audio into the `music/` folder:
 ### Tech Stack
 
 - **Language**: Python 3 + tkinter
-- **Platform**: macOS (primary), Windows, Linux (fallback)
+- **Platform**: macOS (tested), Windows / Linux (code paths exist, unverified — PRs welcome)
 - **Pixel rendering**: Canvas rectangles, SCALE=6 (each logical pixel = 6×6 screen pixels)
 - **Transparent window**: macOS `systemTransparent`, Windows `transparentcolor`, `overrideredirect` everywhere
 - **Particle system**: Physics simulation (gravity, velocity, life, decay)
@@ -150,7 +150,7 @@ launchctl load   ~/Library/LaunchAgents/com.clawd.pet.plist   # enable
 
 ## 中文
 
-macOS / Windows / Linux 像素风桌面宠物螃蟹，在你等待 Claude 的时候陪你编程，内置打卡系统，它的心情会随着你的打卡习惯变化。
+macOS 像素风桌面宠物螃蟹（Windows / Linux 代码已写但未实机测试），在你等待 Claude 的时候陪你编程，内置打卡系统，它的心情会随着你的打卡习惯变化。
 
 Clawdy 是基于 Claude 官方吉祥物 Clawd 的桌面小伙伴，等 Claude 干活的时候，看它在旁边忙忙碌碌，让等待变得有趣。坚持打卡，小螃蟹肉眼可见地更开心；偷懒几天，它看起来也会有点蔫。
 
@@ -268,7 +268,7 @@ Clawdy 的心情会被你的打卡行为影响，进而改变随机状态出现�
 ### 技术架构
 
 - **语言**：Python 3 + tkinter
-- **平台**：macOS（主力）、Windows、Linux（fallback）
+- **平台**：macOS（已测试）、Windows / Linux（代码已写但未验证，欢迎帮忙测试 PR）
 - **像素绘制**：Canvas rectangles，SCALE=6（每个逻辑像素 6×6 屏幕像素）
 - **透明窗口**：macOS `systemTransparent`、Windows `transparentcolor`，全平台 `overrideredirect`
 - **粒子系统**：物理模拟（重力、速度、生命周期、衰减）
