@@ -8,6 +8,12 @@ _npx/
 _update-notifier-last-checked
 .claude/
 
+# 用户本地数据（程序自动生成）
+checkin.json
+
+# 本地资料副本（非中文名的 clawd-assets 不在此列）
+clawd-assets_副本/
+
 # 音乐：只保留 3 首示例，其余忽略
 music/*.m4a
 music/*.wav
