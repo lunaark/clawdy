@@ -10,7 +10,7 @@
 
 ## English
 
-A pixel-art desktop pet crab for macOS (Windows / Linux experimental, untested) — your coding companion while waiting for Claude, with a built-in habit check-in system that shapes its mood.
+A pixel-art VS Code extension featuring a desktop pet crab — your coding companion while waiting for Claude, with a built-in habit check-in system that shapes its mood.
 
 Clawdy is based on Claude's official mascot Clawd. While Claude is working, watch your little crab buddy do its thing — it makes the wait actually fun. Stick with your check-ins and Clawdy gets visibly happier; slack off and it looks a little down.
 

@@ -8,5 +8,8 @@ Pillow>=9.0
 # 可选：全局快捷键（Ctrl+Shift+C 切换显示/隐藏）
 pynput>=1.7
 
+# 可选：macOS 全屏应用上方浮动（解决全屏时小螃蟹消失的问题）
+pyobjc-framework-Cocoa>=9.0; sys_platform == "darwin"
+
 # 可选：Windows 音乐播放（macOS 用自带的 afplay，不需要）
 # pygame>=2.5
